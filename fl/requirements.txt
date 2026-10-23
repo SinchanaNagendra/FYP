@@ -1,0 +1,52 @@
+# FL stack – pinned versions
+# Install with: pip install -r fl/requirements.txt
+
+# Core ML
+torch==2.2.2
+torchvision==0.17.2
+
+# Federated learning framework
+flwr==1.8.0
+
+# Differential privacy
+opacus==1.4.0
+
+# Traditional ML + balancing
+scikit-learn==1.4.2
+imbalanced-learn==0.12.2
+
+# Data processing
+pandas==2.2.2
+numpy==1.26.4
+pyarrow==16.0.0
+scipy==1.13.0
+
+# Cryptography (secure aggregation)
+cryptography==42.0.7
+
+# IPFS client
+ipfshttpclient==0.8.0a2
+
+# Hyperledger Fabric Gateway
+# Note: fabric-sdk-py requires manual build; use gateway-fabric for Python
+# grpcio and protobuf are required by both
+grpcio==1.63.0
+protobuf==4.25.3
+
+# Kaggle API
+kaggle==1.6.12
+
+# Dashboard backend
+fastapi==0.111.0
+uvicorn==0.29.0
+websockets==12.0
+
+# Testing
+pytest==8.2.0
+pytest-asyncio==0.23.6
+
+# Experiment utilities
+matplotlib==3.8.4
+seaborn==0.13.2
+tqdm==4.66.4
+pyyaml==6.0.1

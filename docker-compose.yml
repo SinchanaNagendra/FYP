@@ -1,0 +1,604 @@
+# =============================================================================
+# Blockchain-Secured Federated Learning – docker-compose.yml
+# Full N-bank deployment. N is controlled by docker-compose profiles or
+# the Makefile wrapper. Default: 5 banks.
+# =============================================================================
+version: "3.9"
+
+# ---------------------------------------------------------------------------
+# Shared networks
+# ---------------------------------------------------------------------------
+networks:
+  fabric_net:
+    driver: bridge
+  ipfs_private:
+    driver: bridge
+  fl_net:
+    driver: bridge
+  dashboard_net:
+    driver: bridge
+
+# ---------------------------------------------------------------------------
+# Shared volumes
+# ---------------------------------------------------------------------------
+volumes:
+  # Orderer data
+  orderer0_data:
+  orderer1_data:
+  orderer2_data:
+
+  # Per-bank data volumes (mounted read-only into FL nodes, read-write only
+  # from the bank's own data-init container). These are NEVER shared across banks.
+  bank0_data:
+  bank1_data:
+  bank2_data:
+  bank3_data:
+  bank4_data:
+
+  # Per-bank peer state
+  peer0_bank0_data:
+  peer0_bank1_data:
+  peer0_bank2_data:
+  peer0_bank3_data:
+  peer0_bank4_data:
+
+  # IPFS private swarm shared volume (encrypted artifacts only)
+  ipfs_bank0_data:
+  ipfs_bank1_data:
+  ipfs_bank2_data:
+  ipfs_bank3_data:
+  ipfs_bank4_data:
+
+  # CA data
+  ca_bank0_data:
+  ca_bank1_data:
+  ca_bank2_data:
+  ca_bank3_data:
+  ca_bank4_data:
+
+  # Results
+  results_data:
+
+# ---------------------------------------------------------------------------
+# Orderer nodes (Raft consensus, 3 nodes)
+# ---------------------------------------------------------------------------
+services:
+
+  orderer0:
+    image: hyperledger/fabric-orderer:2.5
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:17050
+    volumes:
+      - ./fabric/crypto-config/ordererOrganizations/orderer.fraud.net/orderers/orderer0.orderer.fraud.net/msp:/var/hyperledger/orderer/msp
+      - ./fabric/crypto-config/ordererOrganizations/orderer.fraud.net/orderers/orderer0.orderer.fraud.net/tls:/var/hyperledger/orderer/tls
+      - orderer0_data:/var/hyperledger/production/orderer
+    networks:
+      - fabric_net
+    ports:
+      - "7050:7050"
+      - "7053:7053"
+
+  orderer1:
+    image: hyperledger/fabric-orderer:2.5
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=8050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:8053
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:17051
+    volumes:
+      - ./fabric/crypto-config/ordererOrganizations/orderer.fraud.net/orderers/orderer1.orderer.fraud.net/msp:/var/hyperledger/orderer/msp
+      - ./fabric/crypto-config/ordererOrganizations/orderer.fraud.net/orderers/orderer1.orderer.fraud.net/tls:/var/hyperledger/orderer/tls
+      - orderer1_data:/var/hyperledger/production/orderer
+    networks:
+      - fabric_net
+    ports:
+      - "8050:8050"
+      - "8053:8053"
+
+  orderer2:
+    image: hyperledger/fabric-orderer:2.5
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=9050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:9053
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:17052
+    volumes:
+      - ./fabric/crypto-config/ordererOrganizations/orderer.fraud.net/orderers/orderer2.orderer.fraud.net/msp:/var/hyperledger/orderer/msp
+      - ./fabric/crypto-config/ordererOrganizations/orderer.fraud.net/orderers/orderer2.orderer.fraud.net/tls:/var/hyperledger/orderer/tls
+      - orderer2_data:/var/hyperledger/production/orderer
+    networks:
+      - fabric_net
+    ports:
+      - "9050:9050"
+      - "9053:9053"
+
+  # ---------------------------------------------------------------------------
+  # Bank 0 – Fabric CA + Peer + IPFS + FL node
+  # ---------------------------------------------------------------------------
+  ca.bank0.fraud.net:
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.bank0.fraud.net
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+    volumes:
+      - ca_bank0_data:/etc/hyperledger/fabric-ca-server
+    networks:
+      - fabric_net
+    ports:
+      - "7054:7054"
+
+  peer0.bank0.fraud.net:
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - CORE_PEER_ID=peer0.bank0.fraud.net
+      - CORE_PEER_ADDRESS=peer0.bank0.fraud.net:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.bank0.fraud.net:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.bank0.fraud.net:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.bank0.fraud.net:7051
+      - CORE_PEER_LOCALMSPID=Bank0MSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:17061
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fyp_fabric_net
+      - FABRIC_LOGGING_SPEC=INFO
+    volumes:
+      - ./fabric/crypto-config/peerOrganizations/bank0.fraud.net/peers/peer0.bank0.fraud.net/msp:/etc/hyperledger/fabric/msp
+      - ./fabric/crypto-config/peerOrganizations/bank0.fraud.net/peers/peer0.bank0.fraud.net/tls:/etc/hyperledger/fabric/tls
+      - peer0_bank0_data:/var/hyperledger/production
+      - /var/run/docker.sock:/host/var/run/docker.sock
+    networks:
+      - fabric_net
+    ports:
+      - "7051:7051"
+    depends_on:
+      - orderer0
+
+  ipfs-bank0:
+    image: ipfs/kubo:v0.26.0
+    environment:
+      - IPFS_SWARM_KEY_FILE=/data/ipfs/swarm.key
+    volumes:
+      - ipfs_bank0_data:/data/ipfs
+      - ./fabric/scripts/swarm.key:/data/ipfs/swarm.key:ro
+    networks:
+      - ipfs_private
+    ports:
+      - "4001:4001"
+      - "5001:5001"
+
+  fl-bank0:
+    build:
+      context: ./fl
+      dockerfile: Dockerfile
+    environment:
+      - BANK_ID=0
+      - N_BANKS=5
+      - FABRIC_PEER_ENDPOINT=peer0.bank0.fraud.net:7051
+      - IPFS_API_URL=http://ipfs-bank0:5001
+      - DATA_PATH=/data/bank0
+      - RESULTS_PATH=/results
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - bank0_data:/data/bank0:ro        # READ-ONLY: bank data never leaves this volume
+      - results_data:/results
+      - ./fabric/crypto-config/peerOrganizations/bank0.fraud.net:/crypto:ro
+    networks:
+      - fl_net
+      - fabric_net
+      - ipfs_private
+    depends_on:
+      - peer0.bank0.fraud.net
+      - ipfs-bank0
+
+  # ---------------------------------------------------------------------------
+  # Banks 1–4 follow the same pattern (abbreviated for clarity)
+  # See fabric/scripts/generate_compose.py to regenerate for N=3 or N=8
+  # ---------------------------------------------------------------------------
+  ca.bank1.fraud.net:
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.bank1.fraud.net
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+    volumes:
+      - ca_bank1_data:/etc/hyperledger/fabric-ca-server
+    networks:
+      - fabric_net
+    ports:
+      - "8054:8054"
+
+  peer0.bank1.fraud.net:
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - CORE_PEER_ID=peer0.bank1.fraud.net
+      - CORE_PEER_ADDRESS=peer0.bank1.fraud.net:8051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.bank1.fraud.net:8052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:8052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.bank1.fraud.net:8051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.bank1.fraud.net:8051
+      - CORE_PEER_LOCALMSPID=Bank1MSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fyp_fabric_net
+      - FABRIC_LOGGING_SPEC=INFO
+    volumes:
+      - ./fabric/crypto-config/peerOrganizations/bank1.fraud.net/peers/peer0.bank1.fraud.net/msp:/etc/hyperledger/fabric/msp
+      - ./fabric/crypto-config/peerOrganizations/bank1.fraud.net/peers/peer0.bank1.fraud.net/tls:/etc/hyperledger/fabric/tls
+      - peer0_bank1_data:/var/hyperledger/production
+      - /var/run/docker.sock:/host/var/run/docker.sock
+    networks:
+      - fabric_net
+    ports:
+      - "8051:8051"
+    depends_on:
+      - orderer0
+
+  ipfs-bank1:
+    image: ipfs/kubo:v0.26.0
+    environment:
+      - IPFS_SWARM_KEY_FILE=/data/ipfs/swarm.key
+    volumes:
+      - ipfs_bank1_data:/data/ipfs
+      - ./fabric/scripts/swarm.key:/data/ipfs/swarm.key:ro
+    networks:
+      - ipfs_private
+    ports:
+      - "4011:4001"
+      - "5011:5001"
+
+  fl-bank1:
+    build:
+      context: ./fl
+      dockerfile: Dockerfile
+    environment:
+      - BANK_ID=1
+      - N_BANKS=5
+      - FABRIC_PEER_ENDPOINT=peer0.bank1.fraud.net:8051
+      - IPFS_API_URL=http://ipfs-bank1:5001
+      - DATA_PATH=/data/bank1
+      - RESULTS_PATH=/results
+    volumes:
+      - bank1_data:/data/bank1:ro
+      - results_data:/results
+      - ./fabric/crypto-config/peerOrganizations/bank1.fraud.net:/crypto:ro
+    networks:
+      - fl_net
+      - fabric_net
+      - ipfs_private
+    depends_on:
+      - peer0.bank1.fraud.net
+      - ipfs-bank1
+
+  ca.bank2.fraud.net:
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.bank2.fraud.net
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=9054
+    volumes:
+      - ca_bank2_data:/etc/hyperledger/fabric-ca-server
+    networks:
+      - fabric_net
+    ports:
+      - "9054:9054"
+
+  peer0.bank2.fraud.net:
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - CORE_PEER_ID=peer0.bank2.fraud.net
+      - CORE_PEER_ADDRESS=peer0.bank2.fraud.net:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.bank2.fraud.net:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.bank2.fraud.net:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.bank2.fraud.net:9051
+      - CORE_PEER_LOCALMSPID=Bank2MSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fyp_fabric_net
+      - FABRIC_LOGGING_SPEC=INFO
+    volumes:
+      - ./fabric/crypto-config/peerOrganizations/bank2.fraud.net/peers/peer0.bank2.fraud.net/msp:/etc/hyperledger/fabric/msp
+      - ./fabric/crypto-config/peerOrganizations/bank2.fraud.net/peers/peer0.bank2.fraud.net/tls:/etc/hyperledger/fabric/tls
+      - peer0_bank2_data:/var/hyperledger/production
+      - /var/run/docker.sock:/host/var/run/docker.sock
+    networks:
+      - fabric_net
+    ports:
+      - "9051:9051"
+    depends_on:
+      - orderer0
+
+  ipfs-bank2:
+    image: ipfs/kubo:v0.26.0
+    volumes:
+      - ipfs_bank2_data:/data/ipfs
+      - ./fabric/scripts/swarm.key:/data/ipfs/swarm.key:ro
+    networks:
+      - ipfs_private
+    ports:
+      - "4021:4001"
+      - "5021:5001"
+
+  fl-bank2:
+    build:
+      context: ./fl
+      dockerfile: Dockerfile
+    environment:
+      - BANK_ID=2
+      - N_BANKS=5
+      - FABRIC_PEER_ENDPOINT=peer0.bank2.fraud.net:9051
+      - IPFS_API_URL=http://ipfs-bank2:5001
+      - DATA_PATH=/data/bank2
+      - RESULTS_PATH=/results
+    volumes:
+      - bank2_data:/data/bank2:ro
+      - results_data:/results
+      - ./fabric/crypto-config/peerOrganizations/bank2.fraud.net:/crypto:ro
+    networks:
+      - fl_net
+      - fabric_net
+      - ipfs_private
+    depends_on:
+      - peer0.bank2.fraud.net
+      - ipfs-bank2
+
+  ca.bank3.fraud.net:
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.bank3.fraud.net
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=10054
+    volumes:
+      - ca_bank3_data:/etc/hyperledger/fabric-ca-server
+    networks:
+      - fabric_net
+    ports:
+      - "10054:10054"
+
+  peer0.bank3.fraud.net:
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - CORE_PEER_ID=peer0.bank3.fraud.net
+      - CORE_PEER_ADDRESS=peer0.bank3.fraud.net:10051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:10051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.bank3.fraud.net:10052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:10052
+      - CORE_PEER_LOCALMSPID=Bank3MSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fyp_fabric_net
+      - FABRIC_LOGGING_SPEC=INFO
+    volumes:
+      - ./fabric/crypto-config/peerOrganizations/bank3.fraud.net/peers/peer0.bank3.fraud.net/msp:/etc/hyperledger/fabric/msp
+      - ./fabric/crypto-config/peerOrganizations/bank3.fraud.net/peers/peer0.bank3.fraud.net/tls:/etc/hyperledger/fabric/tls
+      - peer0_bank3_data:/var/hyperledger/production
+      - /var/run/docker.sock:/host/var/run/docker.sock
+    networks:
+      - fabric_net
+    ports:
+      - "10051:10051"
+    depends_on:
+      - orderer0
+
+  ipfs-bank3:
+    image: ipfs/kubo:v0.26.0
+    volumes:
+      - ipfs_bank3_data:/data/ipfs
+      - ./fabric/scripts/swarm.key:/data/ipfs/swarm.key:ro
+    networks:
+      - ipfs_private
+    ports:
+      - "4031:4001"
+      - "5031:5001"
+
+  fl-bank3:
+    build:
+      context: ./fl
+      dockerfile: Dockerfile
+    environment:
+      - BANK_ID=3
+      - N_BANKS=5
+      - FABRIC_PEER_ENDPOINT=peer0.bank3.fraud.net:10051
+      - IPFS_API_URL=http://ipfs-bank3:5001
+      - DATA_PATH=/data/bank3
+      - RESULTS_PATH=/results
+    volumes:
+      - bank3_data:/data/bank3:ro
+      - results_data:/results
+      - ./fabric/crypto-config/peerOrganizations/bank3.fraud.net:/crypto:ro
+    networks:
+      - fl_net
+      - fabric_net
+      - ipfs_private
+    depends_on:
+      - peer0.bank3.fraud.net
+      - ipfs-bank3
+
+  ca.bank4.fraud.net:
+    image: hyperledger/fabric-ca:1.5
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.bank4.fraud.net
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=11054
+    volumes:
+      - ca_bank4_data:/etc/hyperledger/fabric-ca-server
+    networks:
+      - fabric_net
+    ports:
+      - "11054:11054"
+
+  peer0.bank4.fraud.net:
+    image: hyperledger/fabric-peer:2.5
+    environment:
+      - CORE_PEER_ID=peer0.bank4.fraud.net
+      - CORE_PEER_ADDRESS=peer0.bank4.fraud.net:11051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:11051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.bank4.fraud.net:11052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:11052
+      - CORE_PEER_LOCALMSPID=Bank4MSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fyp_fabric_net
+      - FABRIC_LOGGING_SPEC=INFO
+    volumes:
+      - ./fabric/crypto-config/peerOrganizations/bank4.fraud.net/peers/peer0.bank4.fraud.net/msp:/etc/hyperledger/fabric/msp
+      - ./fabric/crypto-config/peerOrganizations/bank4.fraud.net/peers/peer0.bank4.fraud.net/tls:/etc/hyperledger/fabric/tls
+      - peer0_bank4_data:/var/hyperledger/production
+      - /var/run/docker.sock:/host/var/run/docker.sock
+    networks:
+      - fabric_net
+    ports:
+      - "11051:11051"
+    depends_on:
+      - orderer0
+
+  ipfs-bank4:
+    image: ipfs/kubo:v0.26.0
+    volumes:
+      - ipfs_bank4_data:/data/ipfs
+      - ./fabric/scripts/swarm.key:/data/ipfs/swarm.key:ro
+    networks:
+      - ipfs_private
+    ports:
+      - "4041:4001"
+      - "5041:5001"
+
+  fl-bank4:
+    build:
+      context: ./fl
+      dockerfile: Dockerfile
+    environment:
+      - BANK_ID=4
+      - N_BANKS=5
+      - FABRIC_PEER_ENDPOINT=peer0.bank4.fraud.net:11051
+      - IPFS_API_URL=http://ipfs-bank4:5001
+      - DATA_PATH=/data/bank4
+      - RESULTS_PATH=/results
+    volumes:
+      - bank4_data:/data/bank4:ro
+      - results_data:/results
+      - ./fabric/crypto-config/peerOrganizations/bank4.fraud.net:/crypto:ro
+    networks:
+      - fl_net
+      - fabric_net
+      - ipfs_private
+    depends_on:
+      - peer0.bank4.fraud.net
+      - ipfs-bank4
+
+  # ---------------------------------------------------------------------------
+  # Dashboard
+  # ---------------------------------------------------------------------------
+  dashboard-api:
+    build:
+      context: ./dashboard/backend
+      dockerfile: Dockerfile
+    environment:
+      - FABRIC_PEER_ENDPOINT=peer0.bank0.fraud.net:7051
+      - N_BANKS=5
+      - RESULTS_PATH=/results
+    volumes:
+      - results_data:/results:ro
+      - ./fabric/crypto-config:/crypto:ro
+    networks:
+      - dashboard_net
+      - fabric_net
+    ports:
+      - "8000:8000"
+    depends_on:
+      - peer0.bank0.fraud.net
+
+  dashboard-ui:
+    build:
+      context: ./dashboard/frontend
+      dockerfile: Dockerfile
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    networks:
+      - dashboard_net
+    ports:
+      - "3000:80"
+    depends_on:
+      - dashboard-api

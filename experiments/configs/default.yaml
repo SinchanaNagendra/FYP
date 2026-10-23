@@ -1,0 +1,28 @@
+# Default experiment configuration
+# Override any value on the CLI: --n-banks 3 etc.
+
+n_banks: 5
+seeds: [42, 123, 777]
+scenarios: [S1, S2, S3_a0.1, S3_a0.5, S3_a1.0]
+models: [logistic_regression, cnn, gaussian_nb, decision_tree, random_forest]
+balancing: [none, weighted, ros, rus, smote, adasyn, hybrid]
+n_epochs: 10
+n_rounds: 20
+batch_size: 256
+lr: 0.001
+device: cpu
+
+# DP sweep
+dp_noise_multipliers: [0.5, 0.8, 1.1, 1.5]
+dp_max_grad_norm: 1.0
+dp_delta: 1.0e-5
+
+# Attacks
+attack_n_malicious: [1, 2]
+attack_types: [label_flip, scaled, sign_flip, backdoor, free_rider]
+robust_methods: [median, trimmed_mean, krum]
+
+# Paths
+partitions_dir: data/partitions
+results_dir: results
+vocab_dir: data/vocab

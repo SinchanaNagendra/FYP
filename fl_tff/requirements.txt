@@ -1,0 +1,15 @@
+# TFF comparison environment – pinned
+# Must match TFF's supported TF version
+tensorflow==2.15.0
+tensorflow-federated==0.75.0
+
+# Data / preprocessing (same as fl/requirements.txt minus PyTorch stack)
+pandas==2.2.2
+numpy==1.26.4
+pyarrow==16.0.0
+scikit-learn==1.4.2
+scipy==1.13.0
+
+# Evaluation
+matplotlib==3.8.4
+seaborn==0.13.2

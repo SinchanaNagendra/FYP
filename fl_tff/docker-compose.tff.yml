@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  tff-runner:
+    build:
+      context: ..
+      dockerfile: fl_tff/Dockerfile
+    volumes:
+      - ../data/partitions:/data/partitions:ro
+      - ../data/vocab:/data/vocab:ro
+      - ../results:/results
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      python fl_tff/run_tff.py
+        --n-banks 5
+        --scenario S1
+        --seed 42
+        --n-rounds 10
+        --partitions /data/partitions
+        --output /results/tff
